@@ -11,6 +11,15 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { DragControls } from "three/examples/jsm/controls/DragControls";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 
+const Plane = () => {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+      <planeBufferGeometry attach="geometry" args={[2000, 2000]} />
+      <meshPhysicalMaterial attach="material" />
+    </mesh>
+  );
+};
+
 const SplineEditorApp = () => {
   return (
     <Canvas
@@ -21,7 +30,16 @@ const SplineEditorApp = () => {
         near: 1,
         far: 10000
       }}
-    ></Canvas>
+    >
+      <Plane />
+      <ambientLight color={new THREE.Color(0xf0f0f0)} />
+      <spotLight
+        color="white"
+        intencity={1.5}
+        position={[0, 1500, 200]}
+        castShadow
+      />
+    </Canvas>
   );
 };
 
