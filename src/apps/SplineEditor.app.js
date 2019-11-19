@@ -14,6 +14,18 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 /** EXNTEND */
 extend({ OrbitControls });
 
+/** STATS */
+const stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
+
+/** GUI */
+const guiParams = {
+  uniform: true
+};
+const gui = new GUI();
+gui.add(guiParams, "uniform");
+
 const Controls = props => {
   const { gl, camera } = useThree();
   const ref = useRef();
@@ -24,8 +36,11 @@ const Controls = props => {
 };
 
 const Plane = () => {
+  useRender(() => {
+    stats.update();
+  });
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -200, 0]}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -200, 0]} receiveShadow>
       <planeBufferGeometry attach="geometry" args={[2000, 2000]} />
       <meshPhysicalMaterial attach="material" />
     </mesh>
@@ -50,14 +65,14 @@ const GridHelper = () => {
 
 const SpotLight = () => {
   const ref = useRef();
-  useRender(() => {
-    ref.current.shadow = new THREE.LightShadow(
-      new THREE.PerspectiveCamera(70, 1, 200, 2000)
-    );
-    ref.current.shadow.bias = -0.000222;
-    ref.current.shadow.mapSize.width = 1024;
-    ref.current.shadow.mapSize.height = 1024;
-  });
+  // useRender(() => {
+  //   ref.current.shadow = new THREE.LightShadow(
+  //     new THREE.PerspectiveCamera(70, 1, 200, 2000)
+  //   );
+  //   ref.current.shadow.bias = -0.000222;
+  //   ref.current.shadow.mapSize.width = 1024;
+  //   ref.current.shadow.mapSize.height = 1024;
+  // });
   return (
     <spotLight
       ref={ref}
