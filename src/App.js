@@ -1,12 +1,14 @@
 import React from "react";
 import { createGlobalStyle } from "styled-components";
-import SplineEditorApp from "./apps/SplineEditor.app";
+// import SplineEditorApp from "./apps/SplineEditor.app";
+import SliderApp from "./apps/Slider.app";
 const App = () => {
   return (
     <>
       <GlobalStyle />
       <div className="App">
-        <SplineEditorApp />
+        <SliderApp />
+        {/* <SplineEditorApp /> */}
       </div>
     </>
   );

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "/Users/uihyunkim/dev/three.js"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "three.js"
+	}
+}
