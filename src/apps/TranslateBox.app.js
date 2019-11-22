@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import React, { useState, useEffect, useRef } from "react";
-import { Canvas, extend, useThree, useRender } from "react-three-fiber";
+import {
+  Canvas,
+  extend,
+  useThree,
+  useRender,
+  useUpdate
+} from "react-three-fiber";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 
@@ -12,7 +18,14 @@ const OrControls = props => {
   return <orbitControls ref={ref} args={[camera, gl.domElement]} {...props} />;
 };
 
-const TrBox = ({ setOrbitable, initPosition }) => {
+const initPoints = [
+  new THREE.Vector3(-10, 10, 0),
+  new THREE.Vector3(-2, 1, 0),
+  new THREE.Vector3(2, 1, 0),
+  new THREE.Vector3(10, 10, 0)
+];
+
+const TrBox = ({ setOrbitable, initPosition, setPoints, id }) => {
   const [hover, setHover] = useState(false);
   const { gl, camera } = useThree();
   const meshRef = useRef();
@@ -29,12 +42,21 @@ const TrBox = ({ setOrbitable, initPosition }) => {
     }
   }, [hover]);
 
+  const pointSet = () => {
+    setPoints(prev => {
+      const curr = [...prev];
+      curr[id] = meshRef.current.position;
+      return curr;
+    });
+  };
+
   return (
     <>
       <mesh
         ref={meshRef}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
+        onPointerUp={pointSet}
         position={position || initPosition}
       >
         <boxBufferGeometry attach="geometry" args={[1, 1, 1]} />
@@ -55,8 +77,28 @@ const GridHelper = () => {
   return <gridHelper ref={ref} args={[100, 100]} receiveShadow />;
 };
 
+const Line = ({ points }) => {
+  var curve = new THREE.CatmullRomCurve3(points);
+  const scatterdPoints = curve.getPoints(50);
+
+  const ref = useUpdate(
+    geom => {
+      console.log(geom);
+      geom.setFromPoints(scatterdPoints);
+    },
+    [points]
+  );
+  return (
+    <line>
+      <bufferGeometry attach="geometry" ref={ref} />
+      <lineBasicMaterial attach="material" color="black" />
+    </line>
+  );
+};
+
 const TranslateBoxApp = () => {
   const [orbitable, setOrbitable] = useState(true);
+  const [points, setPoints] = useState(initPoints);
 
   return (
     <Canvas
@@ -64,8 +106,16 @@ const TranslateBoxApp = () => {
       shadowMap //
     >
       <ambientLight intensity={1} />
-      <TrBox setOrbitable={setOrbitable} initPosition={[-5, 0, 0]} />
-      <TrBox setOrbitable={setOrbitable} initPosition={[5, 0, 0]} />
+      {points.map((point, idx) => (
+        <TrBox
+          key={idx}
+          id={idx}
+          setOrbitable={setOrbitable}
+          initPosition={[point.x, point.y, point.z]}
+          setPoints={setPoints}
+        />
+      ))}
+      <Line points={points} />
       <OrControls enableDamping dampingFactor={0.5} enabled={orbitable} />
       <GridHelper />
     </Canvas>
