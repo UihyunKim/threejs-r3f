@@ -177,7 +177,6 @@ const SplineEditorApp = () => {
           setShowDragGuide={setShowDragGuide}
           setMeshPosition={setMeshPosition}
         />
-
         <GridHelper />
         <Plane />
       </Canvas>

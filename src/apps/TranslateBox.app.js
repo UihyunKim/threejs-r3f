@@ -40,7 +40,7 @@ const TrBox = ({ setOrbitable, initPosition, setPoints, id }) => {
       controlRef.current.detach(meshRef.current);
       setOrbitable(true);
     }
-  }, [hover]);
+  }, [hover, setOrbitable]);
 
   const pointSet = () => {
     setPoints(prev => {
@@ -59,7 +59,7 @@ const TrBox = ({ setOrbitable, initPosition, setPoints, id }) => {
         onPointerUp={pointSet}
         position={position || initPosition}
       >
-        <boxBufferGeometry attach="geometry" args={[1, 1, 1]} />
+        <boxBufferGeometry attach="geometry" args={[2, 2, 2]} />
         <meshNormalMaterial attach="material" />
       </mesh>
       <transformControls ref={controlRef} args={[camera, gl.domElement]} />
@@ -77,28 +77,68 @@ const GridHelper = () => {
   return <gridHelper ref={ref} args={[100, 100]} receiveShadow />;
 };
 
-const Line = ({ points }) => {
-  var curve = new THREE.CatmullRomCurve3(points);
-  const scatterdPoints = curve.getPoints(50);
+const Line = ({ points, setCurveRef }) => {
+  const geomRef = useRef();
+  let catmullCurve;
+  let scatteredPoints;
 
-  const ref = useUpdate(
-    geom => {
-      console.log(geom);
-      geom.setFromPoints(scatterdPoints);
-    },
-    [points]
-  );
+  useEffect(() => {
+    catmullCurve = new THREE.CatmullRomCurve3(points);
+    scatteredPoints = catmullCurve.getPoints(50);
+    geomRef.current.setFromPoints(scatteredPoints);
+    setCurveRef(catmullCurve);
+  }, [points]);
+
   return (
     <line>
-      <bufferGeometry attach="geometry" ref={ref} />
+      <bufferGeometry attach="geometry" ref={geomRef} />
       <lineBasicMaterial attach="material" color="black" />
     </line>
+  );
+};
+
+const Camera = ({ enabled, curveRef }) => {
+  const [cameraRef, setCameraRef] = useState(null);
+  const eyeballRef = useRef();
+
+  const ref = useUpdate(
+    c => {
+      setCameraRef(c);
+    },
+    [enabled]
+  );
+
+  useRender(() => {
+    const time = Date.now();
+    const loopTime = 10 * 1000;
+    const t = (time % loopTime) / loopTime;
+    const pos = curveRef.getPointAt(t);
+    cameraRef.position.copy(pos);
+    eyeballRef.current.position.copy(pos);
+    cameraRef.lookAt(curveRef.getPointAt(1));
+  });
+
+  return (
+    <>
+      <perspectiveCamera
+        ref={ref}
+        args={[10, window.innerWidth / window.innerHeight, 0.01, 100]}
+        position={[0, 0, 0]}
+      />
+      <mesh position={[0, 0, 0]} ref={eyeballRef}>
+        <sphereBufferGeometry attach="geometry" args={[0.2]} />
+        <meshBasicMaterial attach="material" color="gray" />
+      </mesh>
+      {cameraRef && <cameraHelper args={[cameraRef]} />}
+    </>
   );
 };
 
 const TranslateBoxApp = () => {
   const [orbitable, setOrbitable] = useState(true);
   const [points, setPoints] = useState(initPoints);
+  const [cameraView, setCameraView] = useState(true);
+  const [curveRef, setCurveRef] = useState(null);
 
   return (
     <Canvas
@@ -115,7 +155,8 @@ const TranslateBoxApp = () => {
           setPoints={setPoints}
         />
       ))}
-      <Line points={points} />
+      <Line points={points} setCurveRef={setCurveRef} />
+      <Camera enabled={cameraView} curveRef={curveRef} />
       <OrControls enableDamping dampingFactor={0.5} enabled={orbitable} />
       <GridHelper />
     </Canvas>
