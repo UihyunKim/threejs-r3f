@@ -97,13 +97,14 @@ const Line = ({ points, setCurveRef }) => {
   );
 };
 
-const Camera = ({ enabled, curveRef }) => {
+const Camera = ({ enabled, curveRef, setMovingCameraRef }) => {
   const [cameraRef, setCameraRef] = useState(null);
   const eyeballRef = useRef();
 
   const ref = useUpdate(
     c => {
       setCameraRef(c);
+      setMovingCameraRef(c);
     },
     [enabled]
   );
@@ -139,10 +140,12 @@ const TranslateBoxApp = () => {
   const [points, setPoints] = useState(initPoints);
   const [cameraView, setCameraView] = useState(true);
   const [curveRef, setCurveRef] = useState(null);
+  const [movingCameraRef, setMovingCameraRef] = useState(null);
 
   return (
     <Canvas
       camera={{ position: [0, 0, 15] }}
+      // camera={movingCameraRef}
       shadowMap //
     >
       <ambientLight intensity={1} />
@@ -156,7 +159,11 @@ const TranslateBoxApp = () => {
         />
       ))}
       <Line points={points} setCurveRef={setCurveRef} />
-      <Camera enabled={cameraView} curveRef={curveRef} />
+      <Camera
+        enabled={cameraView}
+        curveRef={curveRef}
+        setMovingCameraRef={setMovingCameraRef}
+      />
       <OrControls enableDamping dampingFactor={0.5} enabled={orbitable} />
       <GridHelper />
     </Canvas>
