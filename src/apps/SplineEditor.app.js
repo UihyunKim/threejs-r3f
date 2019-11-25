@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useThree, useRender, extend } from "react-three-fiber";
+import { Canvas, useThree, useFrame, extend } from "react-three-fiber";
 import { useDrag, useHover } from "react-use-gesture";
 import { useSpring, a } from "react-spring/three";
 
@@ -31,7 +31,7 @@ gui.add(guiParams, "uniform");
 const OrbitController = props => {
   const { gl, camera } = useThree();
   const ref = useRef();
-  useRender(() => {
+  useFrame(() => {
     // required if controls.enableDamping or controls.autoRotate are set to true
     ref.current.update();
   });
@@ -39,7 +39,7 @@ const OrbitController = props => {
 };
 
 const Plane = () => {
-  useRender(() => {
+  useFrame(() => {
     stats.update();
   });
   return (
@@ -52,7 +52,7 @@ const Plane = () => {
 
 const GridHelper = () => {
   const ref = useRef();
-  useRender(() => {
+  useFrame(() => {
     ref.current.position.y = -199;
     ref.current.material.opacity = 0.25;
     ref.current.material.transparent = true;
@@ -62,7 +62,7 @@ const GridHelper = () => {
 
 const SpotLight = () => {
   const ref = useRef();
-  useRender(() => {
+  useFrame(() => {
     ref.current.shadow = new THREE.LightShadow(
       new THREE.PerspectiveCamera(70, 1, 200, 2000)
     );
@@ -112,7 +112,7 @@ const DraggableMesh = ({ setOrbitable, setShowDragGuide, setMeshPosition }) => {
     { pointerEvents: true }
   );
 
-  useRender(() => {
+  useFrame(() => {
     // console.log(ref.current.position);
     setMeshPosition({
       x: ref.current.position.x,

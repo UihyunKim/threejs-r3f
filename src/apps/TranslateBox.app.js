@@ -1,22 +1,38 @@
 import * as THREE from "three";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Canvas,
   extend,
   useThree,
-  useRender,
+  useFrame,
   useUpdate
 } from "react-three-fiber";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
+import Stats from "three/examples/jsm/libs/stats.module";
+import Gui from "../components/Gui";
+// import { GUI } from "three/examples/jsm/libs/dat.gui.module";
+
+/**
+ * IMPORT IMAGES
+ */
+import imgSpirit from "../assets/images/spirit-picture.png";
 
 extend({ OrbitControls, TransformControls });
+
 const OrControls = props => {
   const { gl, camera } = useThree();
   const ref = useRef();
-  useRender(() => ref.current.update());
+  useFrame(() => ref.current.update());
   return <orbitControls ref={ref} args={[camera, gl.domElement]} {...props} />;
 };
+
+/**
+ * STATS
+ */
+const stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
 
 const initPoints = [
   new THREE.Vector3(-10, 10, 0),
@@ -25,7 +41,7 @@ const initPoints = [
   new THREE.Vector3(10, 10, 0)
 ];
 
-const TrBox = ({ setOrbitable, initPosition, setPoints, id }) => {
+const TrBox = ({ setOrbitable, initPosition, setPoints, id, gui }) => {
   const [hover, setHover] = useState(false);
   const { gl, camera } = useThree();
   const meshRef = useRef();
@@ -53,6 +69,7 @@ const TrBox = ({ setOrbitable, initPosition, setPoints, id }) => {
   return (
     <>
       <mesh
+        visible={!gui.movingCamera}
         ref={meshRef}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
@@ -69,7 +86,7 @@ const TrBox = ({ setOrbitable, initPosition, setPoints, id }) => {
 
 const GridHelper = () => {
   const ref = useRef();
-  useRender(() => {
+  useFrame(() => {
     ref.current.position.y = -5;
     ref.current.material.opacity = 0.25;
     ref.current.material.transparent = true;
@@ -97,7 +114,7 @@ const Line = ({ points, setCurveRef }) => {
   );
 };
 
-const Camera = ({ enabled, curveRef, setMovingCameraRef }) => {
+const MovingCamera = ({ enabled, curveRef, lookAtRef, setMovingCameraRef }) => {
   const [cameraRef, setCameraRef] = useState(null);
   const eyeballRef = useRef();
 
@@ -109,21 +126,24 @@ const Camera = ({ enabled, curveRef, setMovingCameraRef }) => {
     [enabled]
   );
 
-  useRender(() => {
+  useFrame(() => {
     const time = Date.now();
     const loopTime = 10 * 1000;
     const t = (time % loopTime) / loopTime;
     const pos = curveRef.getPointAt(t);
     cameraRef.position.copy(pos);
     eyeballRef.current.position.copy(pos);
-    cameraRef.lookAt(curveRef.getPointAt(1));
+    // cameraRef.lookAt(curveRef.getPointAt(1));
+    cameraRef.lookAt(lookAtRef.position);
+    stats.update();
   });
 
   return (
     <>
       <perspectiveCamera
+        // <orthographicCamera
         ref={ref}
-        args={[10, window.innerWidth / window.innerHeight, 0.01, 100]}
+        args={[10, window.innerWidth / window.innerHeight, 0.01, 1000]}
         position={[0, 0, 0]}
       />
       <mesh position={[0, 0, 0]} ref={eyeballRef}>
@@ -135,38 +155,87 @@ const Camera = ({ enabled, curveRef, setMovingCameraRef }) => {
   );
 };
 
+const CameraSelector = ({ movingCameraRef, gui }) => {
+  useFrame(({ gl, scene, camera }) => {
+    // console.log(gui);
+    gl.render(scene, gui.movingCamera ? movingCameraRef : camera);
+  }, 1);
+  return null;
+};
+
+const Spirit = ({ setSpiritRef, gui }) => {
+  const ref = useRef();
+
+  useEffect(() => {
+    setSpiritRef(ref.current);
+  }, []);
+
+  return (
+    <mesh visible={!gui.movingCamera} ref={ref} position={[20, 0, 0]}>
+      <sphereBufferGeometry attach="geometry" args={[2, 2, 2]} />
+      <meshBasicMaterial attach="material" color="yellow" />
+    </mesh>
+  );
+};
+
+const SpiritImage = () => {
+  const image = useMemo(() => new THREE.TextureLoader().load(imgSpirit), [
+    imgSpirit
+  ]);
+  // const image = new THREE.TextureLoader().load(url);
+  return image ? (
+    <mesh position={[20, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+      <planeBufferGeometry attach="geometry" args={[5, 5]} />
+      <meshLambertMaterial attach="material">
+        <primitive attach="map" object={image} />
+      </meshLambertMaterial>
+    </mesh>
+  ) : null;
+};
+
 const TranslateBoxApp = () => {
   const [orbitable, setOrbitable] = useState(true);
   const [points, setPoints] = useState(initPoints);
   const [cameraView, setCameraView] = useState(true);
   const [curveRef, setCurveRef] = useState(null);
   const [movingCameraRef, setMovingCameraRef] = useState(null);
-
+  const [gui, setGui] = useState();
+  const [spiritRef, setSpiritRef] = useState(null);
   return (
-    <Canvas
-      camera={{ position: [0, 0, 15] }}
-      // camera={movingCameraRef}
-      shadowMap //
-    >
-      <ambientLight intensity={1} />
-      {points.map((point, idx) => (
-        <TrBox
-          key={idx}
-          id={idx}
-          setOrbitable={setOrbitable}
-          initPosition={[point.x, point.y, point.z]}
-          setPoints={setPoints}
+    <>
+      <Canvas
+        camera={{ position: [0, 0, 15] }}
+        shadowMap
+        //
+        // invalidateFrameloop
+      >
+        <ambientLight intensity={1} />
+        {points.map((point, idx) => (
+          <TrBox
+            gui={gui}
+            key={idx}
+            id={idx}
+            setOrbitable={setOrbitable}
+            initPosition={[point.x, point.y, point.z]}
+            setPoints={setPoints}
+          />
+        ))}
+        {/* SPIRIT PAGE */}
+        <Spirit setSpiritRef={setSpiritRef} gui={gui} />
+        <Line points={points} setCurveRef={setCurveRef} />
+        <MovingCamera
+          enabled={cameraView}
+          curveRef={curveRef}
+          lookAtRef={spiritRef}
+          setMovingCameraRef={setMovingCameraRef}
         />
-      ))}
-      <Line points={points} setCurveRef={setCurveRef} />
-      <Camera
-        enabled={cameraView}
-        curveRef={curveRef}
-        setMovingCameraRef={setMovingCameraRef}
-      />
-      <OrControls enableDamping dampingFactor={0.5} enabled={orbitable} />
-      <GridHelper />
-    </Canvas>
+        <CameraSelector movingCameraRef={movingCameraRef} gui={gui} />
+        <OrControls enableDamping dampingFactor={0.5} enabled={orbitable} />
+        <GridHelper />
+        <SpiritImage />
+      </Canvas>
+      <Gui setGui={setGui} />
+    </>
   );
 };
 
