@@ -12,7 +12,7 @@
     "react-three-fiber": "^3.0.13",
     "react-use-gesture": "^6.0.14",
     "styled-components": "^4.4.1",
-    "three": "^0.110.0"
+    "three": "^0.137.0"
   },
   "scripts": {
     "start": "react-scripts start",
